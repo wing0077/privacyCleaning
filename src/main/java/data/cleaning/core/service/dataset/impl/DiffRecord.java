@@ -5,7 +5,7 @@ import java.util.Map;
 public class DiffRecord {
 	private long id;
 	private int timestamp;
-	// Store only the values which are different form the original record.
+	// Store only the values which are different from the original record.
 	private Map<String, String> diffColsToVal;
 
 	public long getId() {

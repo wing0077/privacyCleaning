@@ -25,6 +25,7 @@ public class DatasetStats {
 	// Constraint to antecedent + consequent entropy.
 	private Map<Constraint, Double> constraintToAntsAndConsEntropy;
 	// Constraint to tid and associated ant string and ants + cons string.
+	//<constraint, <targetId, <LHS, LHS+RHS>>>
 	private Map<Constraint, Map<Long, Pair<String, String>>> constraintTotIdToAntsAndAntsCons;
 
 	public DatasetStats() {

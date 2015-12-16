@@ -11,6 +11,8 @@ public class Record {
 	// Record id is a unique identifier to track a record obj and does not exist
 	// as an attribute in the dataset. Final keyword for defensive programming.
 	private final long id;
+	/** every record stores the column's name and corresponding value to that column,
+	 * like <address, main street> */
 	private Map<String, String> colsToVal;
 	private ErrorMetadata errMetadata;
 
@@ -29,6 +31,7 @@ public class Record {
 		return colsToVal;
 	}
 
+	/** check instanceof LinkedhashMap in order to make sure when you put and get element in the same order*/
 	public void setColsToVal(Map<String, String> colsToVal) {
 		if (colsToVal instanceof LinkedHashMap) {
 			this.colsToVal = colsToVal;
@@ -40,6 +43,10 @@ public class Record {
 		}
 	}
 
+	/** modify the column and its corresponding value
+	 * @param col, column name
+	 * @param val, the new attribute value under this column, which will overwrite old value under this column
+	 */
 	public void modifyValForExistingCol(String col, String val) {
 		if (colsToVal.containsKey(col)) {
 			colsToVal.put(col, val);
@@ -98,6 +105,10 @@ public class Record {
 		return true;
 	}
 
+	/** given columns name, print the attribute value corresponding to the columns
+	 * @param cols, given the name of columns
+	 * @return
+	 */
 	public String prettyPrintRecord(List<String> cols) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("[" + getId() + "] ");
@@ -116,6 +127,11 @@ public class Record {
 		return sb.toString();
 	}
 
+	
+	/** print the Record attribute values by given columns
+	 * @param cols, the column that given
+	 * @return
+	 */
 	public String getRecordStr(List<String> cols) {
 		// TODO: Opt this.
 		StringBuilder sb = new StringBuilder();
@@ -135,6 +151,11 @@ public class Record {
 
 	}
 
+	/** print the record attribute values and separated by given separator
+	 * @param cols, the columns that given
+	 * @param separator, given separator
+	 * @return
+	 */
 	public String getRecordStr(List<String> cols, String separator) {
 		// TODO: Opt this.
 		StringBuilder sb = new StringBuilder();

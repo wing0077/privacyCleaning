@@ -28,6 +28,8 @@ public class Match {
 	private NavigableMap<Float, Long> distToMatchRid;
 	private Map<Long, Set<String>> matchRidToNonExactCols;
 	private Set<Long> bestMatches;
+	/** a Pair<Long, Float> stores the matched recordId and score
+	 * put all matches into a Queue matchQ*/
 	private Queue<Pair<Long, Float>> matchQ;
 	private double bestDist;
 
@@ -72,6 +74,12 @@ public class Match {
 		this.originalrId = originalrId;
 	}
 
+	/** Use NavigableMap to implement RB tree to store matched records
+	 * Why use RB tree? In order to find the max and min value faster
+	 * @param rId
+	 * @param dist
+	 * @param shouldRemoveDupMatches
+	 */
 	public void addRidAndDistIfAcceptable(long rId, float dist,
 			boolean shouldRemoveDupMatches) {
 		if (shouldRemoveDupMatches) {

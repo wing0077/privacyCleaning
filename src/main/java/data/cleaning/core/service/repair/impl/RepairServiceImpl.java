@@ -42,6 +42,9 @@ public class RepairServiceImpl implements RepairService {
 	private static final Logger logger = Logger
 			.getLogger(RepairServiceImpl.class);
 
+	/* given records and constraint, find all violations
+	 * return a violations which contains Multimap<String, Record> and constraint
+	 */
 	@Override
 	public Violations calcViolations(List<Record> records, Constraint constraint) {
 		// TODO: Indexing the tgtDataset would improve performance.
@@ -52,16 +55,21 @@ public class RepairServiceImpl implements RepairService {
 		List<String> cons = constraint.getConsequentCols();
 
 		Multimap<String, Record> violMap = ArrayListMultimap.create();
+		
+		//the first string is LHS, the set<String> is RHS; one LHS can correspond to multiple RHS 
 		Map<String, Set<String>> antsToCons = new HashMap<String, Set<String>>();
 
 		for (Record record : records) {
 			String a = record.getRecordStr(ants);
 			Set<String> c = null;
-
+			
+			
+			//if antsToCons already contains this record's LHS, then add this record's RHS to the Set<String>
 			if (antsToCons.containsKey(a)) {
 				c = antsToCons.get(a);
 				c.add(record.getRecordStr(cons));
 			} else {
+				// if antsToCons didn't contain the LHS yet, then instantial a Set and add new LHS RHS into it
 				c = new HashSet<>();
 				c.add(record.getRecordStr(cons));
 				antsToCons.put(a, c);

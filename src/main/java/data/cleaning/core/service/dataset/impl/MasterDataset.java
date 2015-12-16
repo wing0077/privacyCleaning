@@ -5,11 +5,21 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
+/** maintain a multimap<String, Long> colToRevealedId which stores
+ * column and record id
+ * @author YuHuang
+ *
+ */
 public class MasterDataset extends Dataset {
-
+	
+	/** colToRevealedId, under current column value, 
+	 * which record(Id) has revealed this column value.
+	 * Possible multiple records have revealed this column's value
+	 * <ColumnName, MasterId>*/
 	private Multimap<String, Long> colToRevealedId;
 	// Corresponding target dataset id
 	private long tid;
+	
 
 	public MasterDataset(List<Record> records) {
 		super(records);

@@ -6,9 +6,15 @@ import com.google.common.collect.Multimap;
 import data.cleaning.core.service.dataset.impl.Constraint;
 import data.cleaning.core.service.dataset.impl.Record;
 
-// Records which agree in LHS but not RHS
+
+/** Use Multimap<String, Record> to store the violations,
+ * records which agree in LHS but not RHS. 
+ * String is the LHS
+ * @author YuHuang
+ *
+ */
 public class Violations {
-	// String is the LHS (antecedent)
+	/** String is the LHS (antecedent)*/
 	private Multimap<String, Record> violMap;
 	private Constraint constraint;
 

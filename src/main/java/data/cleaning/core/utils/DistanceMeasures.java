@@ -1,6 +1,11 @@
 package data.cleaning.core.utils;
 
 public class DistanceMeasures {
+	/** get the edit distance of two strings
+	 * @param s0
+	 * @param s1
+	 * @return
+	 */
 	public static int getLevDistance(String s0, String s1) {
 		int len0 = s0.length() + 1;
 		int len1 = s1.length() + 1;

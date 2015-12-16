@@ -19,7 +19,11 @@ import data.cleaning.core.utils.Pair;
 import data.cleaning.core.utils.Version;
 
 public class TargetDataset extends Dataset {
+	/** one target record can correspond to different repair options
+	 * DiffRecord is the record which is different from original one*/
 	private Map<Long, List<DiffRecord>> repairHistory;
+	
+	/** dStats is the statistics of target dataset*/
 	private DatasetStats dStats;
 
 	public TargetDataset(List<Record> records) {
@@ -215,26 +219,42 @@ public class TargetDataset extends Dataset {
 
 	}
 
+	/** given constraint, build related stats 
+	 * @param constraint
+	 */
 	public void buildStats(Constraint constraint) {
 
 		if (dStats.getConstraintToAntsP() == null
 				|| dStats.getConstraintToAntsP().isEmpty()
 				|| !dStats.getConstraintToAntsP().containsKey(constraint)) {
+			// ants is the List<String> of LHS of FD
 			List<String> ants = constraint.getAntecedentCols();
+			// cons is the List<String> of RHS of FD
 			List<String> cons = constraint.getConsequentCols();
 			List<Record> tgtRecords = getRecords();
 			double denom = getRecords().size();
 
 			double antsEntropy = 0d;
 			double antsAndConsEntropy = 0d;
+			
+			//antPToCount stores all records' LHS string pattern
 			Multiset<String> antPToCount = HashMultiset.create();
+			
+			//antConsPToCount stores all records' LHS+RHS (whole string) pattern
 			Multiset<String> antConsPToCount = HashMultiset.create();
+			
+			//tIdToANtsAndAntsCons stores <targetId, <LHS, LHS+RHS>>
 			Map<Long, Pair<String, String>> tIdToAntsAndAntsCons = new HashMap<>();
 
 			for (Record record : tgtRecords) {
-
+				
+				//antP is the current record's LHS string
 				StringBuilder antP = new StringBuilder();
+				
+				//antConsP is the current record's LHS + RHS string, means the whole string
 				StringBuilder antConsP = new StringBuilder();
+				
+				//getColsToVal get current record's <column name, value> pair
 				Map<String, String> cv = record.getColsToVal();
 
 				for (String col : ants) {
@@ -247,19 +267,31 @@ public class TargetDataset extends Dataset {
 				}
 
 				String antStr = antP.toString();
+				
+				//add current record's LHS to LHS pattern set
 				antPToCount.add(antStr);
+				
 				String antConsStr = antConsP.toString();
+				
+				//add current record's whole string to pattern set
 				antConsPToCount.add(antConsStr);
+				
+				/** antsAndAnsCons stores a pair of two string, O1 is LHS string, O2 is LHS+RHS */
 				Pair<String, String> antsAndAntsCons = new Pair<>();
 				antsAndAntsCons.setO1(antStr);
 				antsAndAntsCons.setO2(antConsStr);
+				
+				//map<targetId, pair strings>, the pair<LHS, LHS+RHS>
 				tIdToAntsAndAntsCons.put(record.getId(), antsAndAntsCons);
 
 			}
 
 			Map<Integer, Double> weightedSelfInfoAnt = new HashMap<>();
 
+			// for each LHS pattern that stored in antPToCount, count the number of occurrences of patterns
 			for (String antP : antPToCount.elementSet()) {
+				
+				//count is the number of LHS pattern's occurrences
 				int count = antPToCount.count(antP);
 
 				// Cheaper to do this.
@@ -267,10 +299,13 @@ public class TargetDataset extends Dataset {
 					antsEntropy += weightedSelfInfoAnt.get(count);
 				} else {
 					double num = (double) count;
-
+					// num is the number of current LHS pattern's occurrence, denom is the number of all records
+					// wsi is the frequency of current pattern
 					double wsi = ((double) (num / denom) * (Math.log(denom
 							/ num) / Math.log(2d)));
 					antsEntropy += wsi;
+					
+					//count is the number of current LHS pattern's occurrence, corresponding to its self-information
 					weightedSelfInfoAnt.put(count, wsi);
 				}
 
@@ -279,6 +314,8 @@ public class TargetDataset extends Dataset {
 			Map<Integer, Double> weightedSelfInfoAntCons = new HashMap<>();
 
 			for (String antConsP : antConsPToCount.elementSet()) {
+				
+				//count is the number of current LHS+RHS pattern's occurrence
 				int count = antConsPToCount.count(antConsP);
 
 				if (weightedSelfInfoAntCons.containsKey(count)) {

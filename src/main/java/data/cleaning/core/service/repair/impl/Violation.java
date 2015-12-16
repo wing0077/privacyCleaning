@@ -2,6 +2,10 @@ package data.cleaning.core.service.repair.impl;
 
 import data.cleaning.core.service.dataset.impl.Record;
 
+/** A violation stores one record
+ * @author YuHuang
+ *
+ */
 public class Violation {
 	private Record record;
 

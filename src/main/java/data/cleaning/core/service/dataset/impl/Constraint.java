@@ -7,7 +7,9 @@ public class Constraint {
 
 	private long id;
 	private long datasetid;
+	/** antecedent is the LHS*/
 	private String antecedent;// This can be multiple attributes (in csv)
+	/** consequent is the RHS*/
 	private String consequent;
 	private boolean isReverse;// Is this a reverse of an existing constraint?
 
@@ -55,7 +57,10 @@ public class Constraint {
 	public String toString() {
 		return antecedent + " -> " + consequent;
 	}
-
+	
+	/** get the Antecedent(LHS) in the form of List<String>
+	 * @return
+	 */
 	public List<String> getAntecedentCols() {
 		List<String> ants = new ArrayList<>();
 		String[] antsArr = getAntecedent().split(",");
@@ -65,6 +70,9 @@ public class Constraint {
 		return ants;
 	}
 
+	/** get the Consequent(RHS) in the form of List<String>
+	 * @return
+	 */
 	public List<String> getConsequentCols() {
 		List<String> cons = new ArrayList<>();
 		String[] consArr = getConsequent().split(",");
@@ -74,6 +82,9 @@ public class Constraint {
 		return cons;
 	}
 
+	/** get the whole Constraint in the form of List<String>
+	 * @return
+	 */
 	public List<String> getColsInConstraint() {
 		List<String> cols = new ArrayList<>(getAntecedentCols());
 		cols.addAll(getConsequentCols());

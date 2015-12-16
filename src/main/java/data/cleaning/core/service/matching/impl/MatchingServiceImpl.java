@@ -486,6 +486,7 @@ public class MatchingServiceImpl implements MatchingService {
 
 	private List<Match> shouldUseFileCache(Constraint constraint,
 			String tgtFileName, String mFileName, float simThreshold) {
+		//key here is the cached file name of matches
 		String key = genMatchSignature(constraint, tgtFileName, mFileName,
 				simThreshold);
 
@@ -1194,6 +1195,11 @@ public class MatchingServiceImpl implements MatchingService {
 		return embD;
 	}
 
+	/* find out all matches. In this method, there are two ways to get the matches,
+	 * 1. load matches from cached json file by shouldUseFileCache method (return cachedMatches)
+	 * 2. if there is no cached file, then calculate matches and return (matches).
+	 * For calculating matches, use LuceneIndex to find matches
+	 */
 	@SuppressWarnings("deprecation")
 	@Override
 	public List<Match> applyApproxDataMatching(Constraint constraint,
@@ -1204,7 +1210,8 @@ public class MatchingServiceImpl implements MatchingService {
 				mFileName, simThreshold);
 		boolean shouldRemoveDupMatches = Config.VERSION
 				.contains(Version.REMOVE_DUPS_FROM_MATCHES);
-
+		
+		//if load matches directly from cached file, then return the cachedMatches
 		if (cachedMatches != null && !cachedMatches.isEmpty()) {
 			logger.log(ProdLevel.PROD, "Loading matches from file cache.");
 			return cachedMatches;
@@ -1212,7 +1219,14 @@ public class MatchingServiceImpl implements MatchingService {
 
 		logger.log(ProdLevel.PROD, "Calc. matches.");
 
+		
+		//if there is no cached matches, then recalculate matches
 		List<Match> matches = new ArrayList<>();
+		
+		//use LuceneIndex to find matches
+		
+		
+		
 		LuceneIndex idx = new LuceneIndex();
 		// We want to add errors which are similar to the consequent and also
 		// exist in the domain.
@@ -1222,7 +1236,11 @@ public class MatchingServiceImpl implements MatchingService {
 
 			Record tgtRec = tgtRecords.get(i);
 			Map<String, String> tColsToVal = tgtRec.getColsToVal();
+			
+			//colStr is the attribute value which corresponds to the constraints cols
 			String colStr = tgtRec.getRecordStr(cols);
+			
+			//mRecs stores the found matched master record id and docScore
 			Map<Long, Double> mRecs = idx.search(
 					buildApproxMatchingQuery(colStr, cols),
 					Config.TOP_K_MATCHES);
@@ -1234,11 +1252,15 @@ public class MatchingServiceImpl implements MatchingService {
 				int addedMatch = 0;
 
 				for (Map.Entry<Long, Double> e : mRecs.entrySet()) {
+					
+					//mid is the matched master record id
 					int mid = e.getKey().intValue();
-
+					
+					//because master id begins at 1, but when it stored in list(0), so (mid - 1) 
 					Record mRec = mRecords.get(mid - 1);
 					String matchStr = mRec.getRecordStr(cols);
-					// The docscore is pointless as a distance so calc lev dist.
+					// The docscore is pointless as a distance so calculate edit distance.
+					//levDist is the edit distance between target record and matched master record 
 					int levDist = DistanceMeasures.getLevDistance(colStr,
 							matchStr);
 					float sim = calcSim(levDist, colStr.length(),
@@ -1265,7 +1287,9 @@ public class MatchingServiceImpl implements MatchingService {
 						// logger.log(ProdLevel.PROD, "levDist : " + levDist
 						// + ", sim :" + sim + " colstr :" + colStr
 						// + " matchStr : " + matchStr);
-
+						
+						
+						//if sim >=simThreshold, add matched recordId, sim to Matche() m
 						m.addRidAndDistIfAcceptable(e.getKey(), sim,
 								shouldRemoveDupMatches);
 
@@ -1322,12 +1346,25 @@ public class MatchingServiceImpl implements MatchingService {
 		return matches;
 	}
 
+	/** the bigger difference between s1 and s2 means the larger edit distance,
+	 * which in turn means smaller similarity of s1 and s2, therefore
+	 * sim = 1 - levDist/max(s1,s2)
+	 * @param levDist is the edit distance
+	 * @param s1Len, the length of string 1
+	 * @param s2Len, the length of string 2
+	 * @return
+	 */
 	private float calcSim(int levDist, int s1Len, int s2Len) {
 		float simForCons = 1.0f - (float) levDist
 				/ (float) Math.max(s1Len, s2Len);
 		return simForCons;
 	}
 
+	/** convert target record to query, which can be used to find matches in master
+	 * @param colsStr, the attribute values of target record, which corresponds to given constraint column cols
+	 * @param cols, the corresponding column name of constraint
+	 * @return converted Query from target record
+	 */
 	public Query buildApproxMatchingQuery(String colsStr, List<String> cols) {
 
 		StringBuilder sb = new StringBuilder();

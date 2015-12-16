@@ -185,6 +185,10 @@ public class DatasetServiceImpl implements DatasetService {
 		return gtDataset;
 	}
 
+	/** construct constraints from input stream
+	 * @param constraints
+	 * @return
+	 */
 	private List<Constraint> constructConstraints(byte[] constraints) {
 		List<Constraint> cs = new ArrayList<>();
 		CSVReader reader = null;
@@ -209,6 +213,8 @@ public class DatasetServiceImpl implements DatasetService {
 				constraint.setDatasetid(1);
 				constraint.setAntecedent(antecedent.substring(0,
 						antecedent.length() - 1));
+				
+				// the consequent (RHS) only contains one attribute ?
 				constraint.setConsequent(nextLine[nextLine.length - 1]);
 				conId++;
 				cs.add(constraint);
@@ -227,6 +233,12 @@ public class DatasetServiceImpl implements DatasetService {
 		return cs;
 	}
 
+	/** construct records from input stream by using CSVReader
+	 * @param bytes
+	 * @param separator
+	 * @param quoteChar
+	 * @return
+	 */
 	private List<Record> constructRecords(byte[] bytes, char separator,
 			char quoteChar) {
 		List<Record> records = new ArrayList<>();
@@ -235,7 +247,7 @@ public class DatasetServiceImpl implements DatasetService {
 		try {
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					new ByteArrayInputStream(bytes)));
-
+			// char -1 means null
 			if (separator == (char) -1 && quoteChar == (char) -1) {
 				reader = new CSVReader(in);
 			} else if (quoteChar == (char) -1) {
@@ -246,15 +258,22 @@ public class DatasetServiceImpl implements DatasetService {
 
 			String[] nextLine;
 			int count = 0;
+			
+			/** cols stores the column id and column name*/
 			Map<Integer, String> cols = new HashMap<>();
 
 			while ((nextLine = reader.readNext()) != null) {
+				
+				//read 1st line from csv, which is the column names, and put them in <id, columnName>
 				if (count == 0) {
 					for (int i = 0; i < nextLine.length; i++) {
 						cols.put(i, nextLine[i]);
 					}
 				} else {
+					/** count works as recordId here
+					 * */
 					Record r = new Record(count);
+					/** colsToVal stores <columnName, value>*/
 					Map<String, String> colsToVal = new LinkedHashMap<>();
 
 					for (int i = 0; i < nextLine.length; i++) {
@@ -299,6 +318,13 @@ public class DatasetServiceImpl implements DatasetService {
 		return records;
 	}
 
+	/** construct error data, every ErrorMetdadata contains injected error records
+	 * and orignial records in the form of LinkedHashMap<column, value>
+	 * @param bytes
+	 * @param separator
+	 * @param quoteChar
+	 * @return
+	 */
 	private List<ErrorMetadata> constructErrsMetadata(byte[] bytes,
 			char separator, char quoteChar) {
 		CSVReader reader = null;
@@ -316,7 +342,10 @@ public class DatasetServiceImpl implements DatasetService {
 			}
 
 			String[] nextLine;
-
+			
+			/** tIdToEmd contains <targetId, errorMetadata>
+			 * given target Id, we can get orignial target record
+			 * and error record from ErrorMetadata */
 			Map<Long, ErrorMetadata> tIdToEmd = new HashMap<>();
 
 			long tid = 0;
@@ -326,7 +355,11 @@ public class DatasetServiceImpl implements DatasetService {
 			long gtId = 0;
 			String val = "";
 			int count = 0;
-
+			
+			
+			/** the structure of error dataset like this:
+			 * 0		1			2				3		4
+			 * tId	columnName	originalValue	errorValue	groundTruthId*/
 			while ((nextLine = reader.readNext()) != null) {
 				if (count > 0) {
 					for (int i = 0; i < nextLine.length; i++) {
@@ -642,11 +675,16 @@ public class DatasetServiceImpl implements DatasetService {
 
 	}
 
+	/** given constraint and List<Record>, test whether there is violation or not.
+	 */
 	public boolean isSatisfied(Constraint constraint, List<Record> recs) {
 		// Slow
 		List<String> ants = constraint.getAntecedentCols();
 		List<String> cons = constraint.getConsequentCols();
 
+		/** one LHS might correspond to different RHS, which is considered as violations
+		 * If the Set.size > 1 which means there are multiple RHS, return false; otherwise
+		 * return true*/
 		Map<String, Set<String>> antsToCons = new HashMap<String, Set<String>>();
 
 		for (Record r : recs) {
@@ -694,6 +732,9 @@ public class DatasetServiceImpl implements DatasetService {
 		return newR;
 	}
 
+	/* save List<Record> to local file
+	 * 
+	 */
 	@Override
 	public void saveDataset(List<Record> records, String outputUrl,
 			char separator, char quoteChar) {
@@ -708,14 +749,15 @@ public class DatasetServiceImpl implements DatasetService {
 				writer = new CSVWriter(new FileWriter(outputUrl), separator,
 						quoteChar);
 			}
-
+			// get column names of the record
 			List<String> cols = new ArrayList<>(records.get(0).getColsToVal()
 					.keySet());
 
 			String[] colsArr = cols.toArray(new String[cols.size()]);
 
 			writer.writeNext(colsArr);
-
+			
+			//convert record's value to List<String>vals, and write it into file
 			for (int i = 0; i < records.size(); i++) {
 				Record record = records.get(i);
 				List<String> vals = new ArrayList<>();

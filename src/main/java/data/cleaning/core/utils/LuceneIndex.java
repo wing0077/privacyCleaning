@@ -26,6 +26,7 @@ public class LuceneIndex {
 
 	private static final Logger logger = Logger.getLogger(LuceneIndex.class);
 	private IndexSearcher searcher;
+	/** number of records that indexed*/
 	private int numRecsIndexed;
 	private Random rand;
 
@@ -45,16 +46,20 @@ public class LuceneIndex {
 			@SuppressWarnings("deprecation") Field.Index howToIndex) {
 
 		logger.log(DebugLevel.DEBUG, "Building lucene index.");
-
+		// TODO: RAMDirectory not good for huge index
 		RAMDirectory idx = new RAMDirectory();
 
 		try {
 			// Make an writer to create the index
+			//StandardAnalyzer is general-purpose analyzer
+			//in this case, we also can use WhitespaceAnalyzer which separates tokens using white space
 			IndexWriter writer = new IndexWriter(idx, new IndexWriterConfig(
 					org.apache.lucene.util.Version.LUCENE_48,
 					new StandardAnalyzer(
 							org.apache.lucene.util.Version.LUCENE_48)));
-
+			
+			
+			//convert each record into a document and add the document to IndexWriter
 			for (Record record : records) {
 				writer.addDocument(createDocument(record, cols, howToIndex));
 			}
@@ -89,6 +94,12 @@ public class LuceneIndex {
 
 	}
 
+	/** convert record to Lucene recognized Document object
+	 * @param record
+	 * @param cols, the column name List
+	 * @param howToIndex
+	 * @return
+	 */
 	@SuppressWarnings("deprecation")
 	private static Document createDocument(Record record, List<String> cols,
 			Field.Index howToIndex) {
@@ -96,14 +107,19 @@ public class LuceneIndex {
 		Map<String, String> colsToVal = record.getColsToVal();
 
 		// Unindexed
+		//add every record id as field "rid" 
 		doc.add(new Field("rid", record.getId() + "", Field.Store.YES,
 				Field.Index.NO));
 
 		for (Map.Entry<String, String> entry : colsToVal.entrySet()) {
+			//key here is the column name
 			String key = entry.getKey();
+			//val here is corresponding attribute value
 			String val = entry.getValue();
 			if (cols.contains(key)) {
 				// http://stackoverflow.com/questions/14745973/search-on-non-analyzed-field-using-lucene
+				
+				//add each column from one record as field into doc
 				doc.add(new Field(key, val, Field.Store.YES, howToIndex));
 			}
 		}
@@ -116,10 +132,16 @@ public class LuceneIndex {
 		return doc;
 	}
 
+	/**	given a query q and the number of returned doc, return 
+	 * a Map which maintain the matched recordId and docScore
+	 * @param q, Query q
+	 * @param topK, the number of returned doc
+	 * @return Map which maintain recordId and docScore
+	 */
 	public Map<Long, Double> search(Query q, int topK) {
 		if (q == null)
 			return null;
-
+		// topKRecordToDist stores the recordId and docScore
 		Map<Long, Double> topKRecordToDist = new LinkedHashMap<>();
 
 		try {
@@ -127,7 +149,8 @@ public class LuceneIndex {
 			TopScoreDocCollector collector = TopScoreDocCollector.create(
 					numRecsIndexed, true);
 			searcher.search(q, collector);
-
+			
+			// get the returned docs
 			ScoreDoc[] hits = collector.topDocs().scoreDocs;
 
 			int hitCount = collector.getTotalHits();

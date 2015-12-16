@@ -3,10 +3,16 @@ package data.cleaning.core.service.errgen.impl;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/** contains the original Column to value data and injected error data
+ * @author YuHuang
+ *
+ */
 public class ErrorMetadata {
 	// Extra info if this record had errors injected. Map contains attr to
 	// original attr value.
+	/** errorsColsToVal contains error data, which is column to value*/
 	private Map<String, String> errorsColsToVal;
+	/** origColsToVal contains orignial colum to value*/
 	private Map<String, String> origColsToVal;
 	private long tid;
 	private long gtId;
